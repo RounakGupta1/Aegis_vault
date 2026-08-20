@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { useVault } from "../contexts/VaultContext";
@@ -9,9 +9,13 @@ import { formatDate } from "../lib/utils";
 
 export function UnlockPage() {
   const { user, logout } = useAuth();
-  const { unlock, unlocking } = useVault();
+  const { unlock, unlocking, locked } = useVault();
   const navigate = useNavigate();
   const form = useForm({ defaultValues: { masterPassword: "" } });
+
+  if (!locked) {
+    return <Navigate to="/app" replace />;
+  }
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-4">
@@ -35,6 +39,7 @@ export function UnlockPage() {
         </dl>
         <form
           className="mt-6 space-y-4"
+          noValidate
           onSubmit={form.handleSubmit(async (values) => {
             try {
               await unlock(values.masterPassword);

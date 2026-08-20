@@ -40,16 +40,29 @@ function csrfFrom(value: string[] | string | undefined) {
 }
 
 describe("auth and vault API", () => {
-  let mongo: MongoMemoryServer;
+  let mongo: MongoMemoryServer | undefined;
+  let usingLocalMongo = false;
+  const localMongoUri = process.env.TEST_DATABASE_URL ?? "mongodb://127.0.0.1:27017/aegis_test";
 
   beforeAll(async () => {
-    mongo = await MongoMemoryServer.create();
-    await mongoose.connect(mongo.getUri());
+    try {
+      mongo = await MongoMemoryServer.create();
+      await mongoose.connect(mongo.getUri());
+    } catch (error) {
+      usingLocalMongo = true;
+      await mongoose.connect(localMongoUri);
+      console.warn("mongodb-memory-server unavailable, using local MongoDB for API tests");
+      if (error instanceof Error) {
+        console.warn(error.message);
+      }
+    }
   }, 120_000);
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongo?.stop();
+    if (!usingLocalMongo) {
+      await mongo?.stop();
+    }
   }, 30_000);
 
   beforeEach(async () => {

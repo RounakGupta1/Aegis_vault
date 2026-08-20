@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { useVault } from "../contexts/VaultContext";
 import { Button } from "../components/ui/Button";
-import { Input, Label } from "../components/ui/Field";
+import { FieldError, Input, Label } from "../components/ui/Field";
 import { analyzePassword } from "../lib/generator";
 import { authApi } from "../api/auth";
 import {
@@ -32,7 +32,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const { hydrate } = useVault();
   const navigate = useNavigate();
-  const form = useForm({
+  const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", masterPassword: "", rememberDevice: false },
   });
@@ -40,6 +40,7 @@ export function LoginPage() {
   return (
     <form
       className="space-y-4"
+      noValidate
       onSubmit={form.handleSubmit(async (values) => {
         try {
           const { masterKey, user } = await login(values);
@@ -54,6 +55,7 @@ export function LoginPage() {
       <div>
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" autoComplete="username" {...form.register("email")} />
+        <FieldError message={form.formState.errors.email?.message} />
       </div>
       <div>
         <Label htmlFor="password">Master password</Label>
@@ -63,6 +65,7 @@ export function LoginPage() {
           autoComplete="current-password"
           {...form.register("masterPassword")}
         />
+        <FieldError message={form.formState.errors.masterPassword?.message} />
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" {...form.register("rememberDevice")} />
@@ -94,7 +97,8 @@ const registerSchema = z
 
 export function RegisterPage() {
   const { registerAccount } = useAuth();
-  const form = useForm({
+  const navigate = useNavigate();
+  const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", masterPassword: "", confirm: "" },
   });
@@ -110,7 +114,7 @@ export function RegisterPage() {
           Aegis cannot reset a lost master password without this key. Store it offline.
         </p>
         <code className="block break-all rounded-xl bg-black/5 p-3 text-sm">{recovery}</code>
-        <Button className="w-full" onClick={() => (window.location.href = "/login")}>
+        <Button className="w-full" onClick={() => navigate("/login")}>
           Continue to sign in
         </Button>
       </div>
@@ -120,6 +124,7 @@ export function RegisterPage() {
   return (
     <form
       className="space-y-4"
+      noValidate
       onSubmit={form.handleSubmit(async (values) => {
         try {
           const result = await registerAccount(values);
@@ -133,19 +138,23 @@ export function RegisterPage() {
       <div>
         <Label htmlFor="name">Name</Label>
         <Input id="name" {...form.register("name")} />
+        <FieldError message={form.formState.errors.name?.message} />
       </div>
       <div>
         <Label htmlFor="reg-email">Email</Label>
         <Input id="reg-email" type="email" {...form.register("email")} />
+        <FieldError message={form.formState.errors.email?.message} />
       </div>
       <div>
         <Label htmlFor="master">Master password</Label>
         <Input id="master" type="password" {...form.register("masterPassword")} />
         <p className="mt-1 text-xs text-[var(--color-muted)]">Strength: {strength}</p>
+        <FieldError message={form.formState.errors.masterPassword?.message} />
       </div>
       <div>
         <Label htmlFor="confirm">Confirm master password</Label>
         <Input id="confirm" type="password" {...form.register("confirm")} />
+        <FieldError message={form.formState.errors.confirm?.message} />
       </div>
       <Button className="w-full" type="submit" disabled={form.formState.isSubmitting}>
         Create account
@@ -155,13 +164,22 @@ export function RegisterPage() {
 }
 
 export function ForgotPage() {
-  const form = useForm({ defaultValues: { email: "" } });
+  const forgotSchema = z.object({ email: z.string().email("Enter a valid email address") });
+  const form = useForm<z.infer<typeof forgotSchema>>({
+    resolver: zodResolver(forgotSchema),
+    defaultValues: { email: "" },
+  });
   return (
     <form
       className="space-y-4"
+      noValidate
       onSubmit={form.handleSubmit(async (values) => {
-        await authApi.forgotPassword(values.email);
-        toast.success("If the account exists, reset instructions were sent.");
+        try {
+          await authApi.forgotPassword(values.email);
+          toast.success("If the account exists, reset instructions were sent.");
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Could not send reset instructions");
+        }
       })}
     >
       <p className="text-sm text-[var(--color-muted)]">
@@ -171,6 +189,7 @@ export function ForgotPage() {
       <div>
         <Label htmlFor="forgot-email">Email</Label>
         <Input id="forgot-email" type="email" {...form.register("email")} />
+        <FieldError message={form.formState.errors.email?.message} />
       </div>
       <Button className="w-full" type="submit">
         Send reset link
@@ -192,8 +211,8 @@ const resetSchema = z
   });
 
 export function ResetPage() {
-  const params = new URLSearchParams(window.location.search);
-  const form = useForm({
+  const [params] = useSearchParams();
+  const form = useForm<z.infer<typeof resetSchema>>({
     resolver: zodResolver(resetSchema),
     defaultValues: {
       token: params.get("token") ?? "",
@@ -206,6 +225,7 @@ export function ResetPage() {
   return (
     <form
       className="space-y-4"
+      noValidate
       onSubmit={form.handleSubmit(async (values) => {
         try {
           const recoveryKey = recoveryPhraseToKey(values.recoveryKey.trim());
@@ -243,9 +263,13 @@ export function ResetPage() {
         new master password.
       </p>
       <Input placeholder="Reset token" {...form.register("token")} />
+      <FieldError message={form.formState.errors.token?.message} />
       <Input placeholder="Recovery key" {...form.register("recoveryKey")} />
+      <FieldError message={form.formState.errors.recoveryKey?.message} />
       <Input type="password" placeholder="New master password" {...form.register("masterPassword")} />
+      <FieldError message={form.formState.errors.masterPassword?.message} />
       <Input type="password" placeholder="Confirm" {...form.register("confirm")} />
+      <FieldError message={form.formState.errors.confirm?.message} />
       <Button className="w-full" type="submit">
         Reset master password
       </Button>
@@ -260,16 +284,20 @@ async function fetchResetWrap(token: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token }),
   });
-  const json = await response.json();
-  if (!response.ok) throw new Error(json.message ?? "Invalid reset token");
-  return json.data as {
-    recoveryWrappedVaultKey: string;
-    recoveryWrappedVaultKeyIv: string;
+  const json = (await response.json().catch(() => ({}))) as {
+    message?: string;
+    data?: {
+      recoveryWrappedVaultKey: string;
+      recoveryWrappedVaultKeyIv: string;
+    };
   };
+  if (!response.ok || !json.data) throw new Error(json.message ?? "Invalid reset token");
+  return json.data;
 }
 
 export function VerifyEmailPage() {
-  const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const [params] = useSearchParams();
+  const token = params.get("token") ?? "";
   const [done, setDone] = useState(false);
   return (
     <div className="space-y-4">
@@ -277,9 +305,13 @@ export function VerifyEmailPage() {
       <Button
         className="w-full"
         onClick={async () => {
-          await authApi.verifyEmail(token);
-          setDone(true);
-          toast.success("Email verified");
+          try {
+            await authApi.verifyEmail(token);
+            setDone(true);
+            toast.success("Email verified");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Verification failed");
+          }
         }}
       >
         Verify email

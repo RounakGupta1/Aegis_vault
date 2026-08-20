@@ -24,7 +24,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiR
     credentials: "include",
     headers,
   });
-  const json = (await response.json()) as ApiResult<T>;
+  let json: ApiResult<T>;
+  try {
+    json = (await response.json()) as ApiResult<T>;
+  } catch {
+    throw new Error(response.ok ? "Invalid server response" : `Request failed (${response.status})`);
+  }
   if (!response.ok || !json.success) {
     throw new Error(json.message || "Request failed");
   }

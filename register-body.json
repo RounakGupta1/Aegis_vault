@@ -1,0 +1,15 @@
+{
+    "name":  "Codex User",
+    "authVerifier":  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "wrappedVaultKey":  "d3JhcHBlZC12YXVsdC1rZXktYnl0ZXMtaGVyZSEh",
+    "wrappedVaultKeyIv":  "MTIzNDU2Nzg5MDEy",
+    "email":  "codex-1787215385@example.com",
+    "kdfSalt":  "c2FsdHNhbHRzYWx0c2FsdA==",
+    "kdfParams":  {
+                      "parallelism":  1,
+                      "hashLength":  32,
+                      "memory":  19456,
+                      "type":  "argon2id",
+                      "iterations":  3
+                  }
+}

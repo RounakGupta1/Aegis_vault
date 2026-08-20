@@ -5,8 +5,9 @@ import { Skeleton } from "../components/ui/Card";
 
 export function GuestOnly() {
   const { user, loading } = useAuth();
+  const { locked } = useVault();
   if (loading) return <Skeleton className="m-10 h-40" />;
-  if (user) return <Navigate to="/unlock" replace />;
+  if (user) return <Navigate to={locked ? "/unlock" : "/app"} replace />;
   return <Outlet />;
 }
 

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useVault } from "../contexts/VaultContext";
@@ -10,6 +10,7 @@ import { VaultCard } from "../components/vault/VaultCard";
 export function DashboardPage() {
   const { user } = useAuth();
   const { items } = useVault();
+  const navigate = useNavigate();
   const health = useMemo(() => buildHealthReport(items), [items]);
   const recent = [...items].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0, 4);
   const updated = [...items].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)).slice(0, 4);
@@ -50,7 +51,7 @@ export function DashboardPage() {
         <Card>
           <h2 className="font-semibold">Quick actions</h2>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button onClick={() => (window.location.href = "/app/vault?new=1")}>
+            <Button onClick={() => navigate("/app/vault?new=1")}>
               Add password
             </Button>
             <Link to="/app/generator">

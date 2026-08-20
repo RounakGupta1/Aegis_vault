@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DEFAULT_CATEGORIES, type VaultPayload, type VaultRecord } from "../../types/vault";
 import { Button } from "../ui/Button";
-import { Input, Label, Textarea } from "../ui/Field";
+import { FieldError, Input, Label, Textarea } from "../ui/Field";
 import { GeneratorPanel } from "../generator/GeneratorPanel";
 
 const schema = z.object({
@@ -135,6 +135,7 @@ export function VaultForm({
   return (
     <form
       className="space-y-3"
+      noValidate
       onSubmit={form.handleSubmit(async (values) => {
         await onSubmit(toPayload(values));
       })}
@@ -156,6 +157,7 @@ export function VaultForm({
         <div>
           <Label htmlFor="title">Name</Label>
           <Input id="title" {...form.register("title")} />
+          <FieldError message={form.formState.errors.title?.message} />
         </div>
       </div>
       {type === "login" && (
@@ -163,10 +165,12 @@ export function VaultForm({
           <div>
             <Label htmlFor="username">Username / email</Label>
             <Input id="username" {...form.register("username")} />
+            <FieldError message={form.formState.errors.username?.message} />
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" {...form.register("password")} />
+            <FieldError message={form.formState.errors.password?.message} />
             <Button type="button" variant="ghost" className="mt-1" onClick={() => setShowGen((v) => !v)}>
               {showGen ? "Hide generator" : "Generate password"}
             </Button>
@@ -179,6 +183,7 @@ export function VaultForm({
           <div>
             <Label htmlFor="url">Website URL</Label>
             <Input id="url" placeholder="https://" {...form.register("url")} />
+            <FieldError message={form.formState.errors.url?.message} />
           </div>
         </>
       )}
@@ -186,6 +191,7 @@ export function VaultForm({
         <div>
           <Label htmlFor="content">Secure content</Label>
           <Textarea id="content" {...form.register("content")} />
+          <FieldError message={form.formState.errors.content?.message} />
         </div>
       )}
       {type === "card" && (
@@ -216,6 +222,7 @@ export function VaultForm({
           <div>
             <Label htmlFor="category">Category</Label>
             <Input id="category" list="cats" {...form.register("category")} />
+            <FieldError message={form.formState.errors.category?.message} />
             <datalist id="cats">
               {categories.map((cat) => (
                 <option key={cat} value={cat} />
@@ -225,6 +232,7 @@ export function VaultForm({
           <div>
             <Label htmlFor="tags">Tags</Label>
             <Input id="tags" placeholder="comma separated" {...form.register("tags")} />
+            <FieldError message={form.formState.errors.tags?.message} />
           </div>
         </div>
       )}
@@ -232,6 +240,7 @@ export function VaultForm({
         <div>
           <Label htmlFor="notes">Notes</Label>
           <Textarea id="notes" {...form.register("notes")} />
+          <FieldError message={form.formState.errors.notes?.message} />
         </div>
       )}
       <label className="flex items-center gap-2 text-sm">

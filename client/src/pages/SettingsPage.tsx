@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
@@ -16,6 +17,14 @@ export function SettingsPage() {
       clipboardClearSeconds: user?.clipboardClearSeconds ?? 20,
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      name: user?.name ?? "",
+      autoLockMinutes: user?.autoLockMinutes ?? 10,
+      clipboardClearSeconds: user?.clipboardClearSeconds ?? 20,
+    });
+  }, [form, user]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -43,14 +52,19 @@ export function SettingsPage() {
       <Card>
         <form
           className="space-y-3"
+          noValidate
           onSubmit={form.handleSubmit(async (values) => {
-            const res = await authApi.updateProfile({
-              name: values.name,
-              autoLockMinutes: Number(values.autoLockMinutes),
-              clipboardClearSeconds: Number(values.clipboardClearSeconds),
-            });
-            setUser(res.data.user);
-            toast.success("Settings saved");
+            try {
+              const res = await authApi.updateProfile({
+                name: values.name,
+                autoLockMinutes: Number(values.autoLockMinutes),
+                clipboardClearSeconds: Number(values.clipboardClearSeconds),
+              });
+              setUser(res.data.user);
+              toast.success("Settings saved");
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not save settings");
+            }
           })}
         >
           <div>
@@ -78,7 +92,13 @@ export function SettingsPage() {
           </div>
           <div>
             <Label htmlFor="clip">Clipboard clear (seconds)</Label>
-            <Input id="clip" type="number" min={5} max={120} {...form.register("clipboardClearSeconds")} />
+            <Input
+              id="clip"
+              type="number"
+              min={5}
+              max={120}
+              {...form.register("clipboardClearSeconds", { valueAsNumber: true })}
+            />
           </div>
           <Button type="submit">Save</Button>
         </form>

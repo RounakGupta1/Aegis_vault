@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,6 +35,12 @@ export function VaultListPage({
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("updated");
   const [open, setOpen] = useState(location.search.includes("new=1"));
+
+  useEffect(() => {
+    if (location.search.includes("new=1")) {
+      setOpen(true);
+    }
+  }, [location.search]);
 
   const filtered = useMemo(() => {
     let list = items.filter((item) => {
@@ -86,7 +92,9 @@ export function VaultListPage({
         >
           <option value="all">All categories</option>
           {cats.map((cat) => (
-            <option key={cat}>{cat}</option>
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
           ))}
         </select>
         <select
@@ -118,9 +126,13 @@ export function VaultListPage({
           customCategories={cats}
           onCancel={() => setOpen(false)}
           onSubmit={async (data) => {
-            await saveItem(data);
-            toast.success("Saved");
-            setOpen(false);
+            try {
+              await saveItem(data);
+              toast.success("Saved");
+              setOpen(false);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not save item");
+            }
           }}
         />
       </Modal>
@@ -160,9 +172,13 @@ export function VaultDetailPage() {
             variant="danger"
             onClick={async () => {
               if (!confirm("Delete this vault item? This cannot be undone.")) return;
-              await deleteItem(item.id);
-              toast.success("Deleted");
-              navigate("/app/vault");
+              try {
+                await deleteItem(item.id);
+                toast.success("Deleted");
+                navigate("/app/vault");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Could not delete item");
+              }
             }}
           >
             Delete
@@ -194,7 +210,11 @@ export function VaultDetailPage() {
         <Button
           variant="secondary"
           onClick={async () => {
-            await saveItem({ ...item.data, favorite: !item.data.favorite }, item.id);
+            try {
+              await saveItem({ ...item.data, favorite: !item.data.favorite }, item.id);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not update favorite");
+            }
           }}
         >
           {item.data.favorite ? "Unfavorite" : "Favorite"}
@@ -206,9 +226,13 @@ export function VaultDetailPage() {
           customCategories={customCategories(items)}
           onCancel={() => setEditing(false)}
           onSubmit={async (data) => {
-            await saveItem(data, item.id);
-            toast.success("Updated");
-            setEditing(false);
+            try {
+              await saveItem(data, item.id);
+              toast.success("Updated");
+              setEditing(false);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not update item");
+            }
           }}
         />
       </Modal>
